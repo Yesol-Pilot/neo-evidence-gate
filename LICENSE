@@ -1,0 +1,23 @@
+Neo Genesis — License
+
+Copyright (c) 2026 Yesol Heo (Neo Genesis Lab)
+
+Source code in this repository is dual-licensed under either of:
+
+  * MIT license            — see LICENSE-MIT   (https://opensource.org/licenses/MIT)
+  * Apache License, Ver 2.0 — see LICENSE-APACHE (https://www.apache.org/licenses/LICENSE-2.0)
+
+at your option.
+
+Non-code components are licensed separately:
+
+  * Datasets (Hugging Face `neogenesislab`), research papers, and blog content
+    are licensed under CC-BY-4.0 (https://creativecommons.org/licenses/by/4.0/).
+  * Brand assets (logo, OG images) are All Rights Reserved.
+
+Contribution
+------------
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
+dual-licensed as above (MIT OR Apache-2.0), without any additional terms or
+conditions.

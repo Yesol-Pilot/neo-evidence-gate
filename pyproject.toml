@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "neo-evidence-gate"
+version = "0.1.0"
+description = "An honesty linter that flags completion claims (DONE/PASS/READY/VERIFIED) which lack backing evidence — for AI-agent output, PRs, commits, and task reports."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT OR Apache-2.0" }
+authors = [{ name = "Yesol Heo", email = "help@neogenesis.app" }]
+keywords = ["ai", "agents", "evidence", "linter", "ci", "honesty", "claim-verification", "llm"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "License :: OSI Approved :: Apache Software License",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Software Development :: Testing",
+]
+
+[project.urls]
+Homepage = "https://neogenesis.app"
+Repository = "https://github.com/Yesol-Pilot/neo-evidence-gate"
+Issues = "https://github.com/Yesol-Pilot/neo-evidence-gate/issues"
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+neo-evidence-gate = "neo_evidence_gate.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/neo_evidence_gate"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
