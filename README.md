@@ -126,8 +126,8 @@ that, because a tool about honesty should be honest.
 
 ## License
 
-Dual-licensed under **MIT OR Apache-2.0**, at your option — see
-[LICENSE](LICENSE). Contributions are accepted under the same terms.
+Dual-licensed under **[MIT](LICENSE) OR [Apache-2.0](LICENSE-APACHE)**, at your
+option. Contributions are accepted under the same terms.
 
 ---
 
