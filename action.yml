@@ -1,0 +1,93 @@
+name: neo-evidence-gate
+description: >
+  Flag completion claims (DONE/PASS/READY/VERIFIED) that lack nearby evidence.
+  Thin composite wrapper around the neo-evidence-gate CLI.
+author: Yesol-Pilot
+
+branding:
+  icon: check-circle
+  color: green
+
+inputs:
+  files:
+    description: >
+      Files or globs to check (space-separated). Use "-" to read stdin; leave
+      empty to require `text` input instead.
+    required: false
+    default: ""
+  text:
+    description: >
+      Inline text to scan (e.g. a PR body). Written to a temp file and checked
+      when non-empty. Ignored when `files` is set.
+    required: false
+    default: ""
+  strict:
+    description: Use the broader (noisier) claim word set.
+    required: false
+    default: "false"
+  max:
+    description: Allowed findings before a non-zero exit (default 0).
+    required: false
+    default: "0"
+  window:
+    description: Lines after a claim to search for evidence.
+    required: false
+    default: "4"
+  back:
+    description: Lines before a claim to search for evidence.
+    required: false
+    default: "0"
+  python-version:
+    description: Python version used to install and run the gate.
+    required: false
+    default: "3.12"
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install neo-evidence-gate
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        # Prefer the checkout when this action is used from a path/ref of the
+        # package repo; otherwise install from PyPI.
+        if [ -f "${{ github.action_path }}/pyproject.toml" ]; then
+          python -m pip install "${{ github.action_path }}"
+        else
+          python -m pip install neo-evidence-gate
+        fi
+
+    - name: Run evidence gate
+      shell: bash
+      env:
+        NEG_FILES: ${{ inputs.files }}
+        NEG_TEXT: ${{ inputs.text }}
+        NEG_STRICT: ${{ inputs.strict }}
+        NEG_MAX: ${{ inputs.max }}
+        NEG_WINDOW: ${{ inputs.window }}
+        NEG_BACK: ${{ inputs.back }}
+      run: |
+        set -euo pipefail
+        args=(--window "$NEG_WINDOW" --back "$NEG_BACK" --max "$NEG_MAX")
+        case "${NEG_STRICT,,}" in
+          true|1|yes) args+=(--strict) ;;
+        esac
+
+        if [ -n "${NEG_FILES// }" ]; then
+          # shellcheck disable=SC2206
+          files=( $NEG_FILES )
+          neo-evidence-gate "${args[@]}" "${files[@]}"
+        elif [ -n "$NEG_TEXT" ]; then
+          tmp="$(mktemp)"
+          printf '%s' "$NEG_TEXT" > "$tmp"
+          neo-evidence-gate "${args[@]}" "$tmp"
+          rm -f "$tmp"
+        else
+          echo "error: provide inputs.files or inputs.text" >&2
+          exit 2
+        fi

@@ -73,6 +73,21 @@ for f in result.findings: # []  (nothing unsupported)
 
 ### In CI (GitHub Actions)
 
+One-liner via the composite action:
+
+```yaml
+- name: Evidence gate on the PR body
+  uses: Yesol-Pilot/neo-evidence-gate@v0
+  with:
+    text: ${{ github.event.pull_request.body }}
+    # optional:
+    # files: "REPORT.md notes.md"
+    # strict: "true"
+    # max: "0"
+```
+
+Or install the CLI yourself:
+
 ```yaml
 - name: Evidence gate on the PR body
   run: |
