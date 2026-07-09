@@ -10,7 +10,7 @@ Three families of patterns:
 
 Everything here is a heuristic, on purpose. The gate is a linter, not a proof
 system: it nudges writers to put evidence next to claims. Tune the word sets to
-your team's style with a config or ``--strict``.
+your team's style with ``--strict`` (broader) or ``--prose`` (more conservative).
 """
 from __future__ import annotations
 
@@ -18,10 +18,22 @@ import re
 
 # --- Claim patterns -------------------------------------------------------
 
+# "done" with completion-claim context — not every English use of the word.
+# Catches agent/status phrasing ("All done.", "done!", "is done", list items)
+# while skipping narrative like "when she was done cooking" or "well done".
+_DONE_CLAIM = (
+    r"(?:"
+    r"\b(?:all|mostly|finally)\s+done\b"
+    r"|\b(?:is|are|we're|we\s+are|it's|it\s+is|now)\s+done\b"
+    r"|(?<![\w'])done(?=\s*(?:[.!…]|$|[—–\-:)]))"
+    r"|(?:^|[\-\*]\s+|:\s*)done\b"
+    r")"
+)
+
 # Default set: high-precision completion assertions. These read as "this is
 # finished" far more often than they appear in neutral prose.
 _DEFAULT_CLAIMS = [
-    ("done", r"\bdone\b"),
+    ("done", _DONE_CLAIM),
     ("checkmark", r"✅"),
     ("tests_pass", r"\b(?:all\s+)?tests?\s+(?:pass|passed|passing|green)\b"),
     ("ready_to", r"\bready\s+to\s+(?:ship|merge|deploy|release|go)\b"),
@@ -31,7 +43,31 @@ _DEFAULT_CLAIMS = [
     ("fixed", r"\bfix(?:ed|es)\b"),
     ("shipped", r"\bshipp(?:ed)?\b"),
     ("successfully", r"\bsuccessfully\s+\w+"),
-    ("now_working", r"\b(?:is\s+)?(?:now\s+)?working\b|\bworks?\s+now\b"),
+    # Prefer "works now" / "is now working" over bare "working".
+    ("now_working", r"\b(?:is\s+)?now\s+working\b|\bworks?\s+now\b|\bis\s+working\b"),
+]
+
+# Prose mode: still stricter — tuned for narrative / long-form text where
+# words like "fixed", "completed", "working" appear without being status claims.
+_PROSE_CLAIMS = [
+    ("done", _DONE_CLAIM),
+    ("checkmark", r"✅"),
+    ("tests_pass", r"\b(?:all\s+)?tests?\s+(?:pass|passed|passing|green)\b"),
+    ("ready_to", r"\bready\s+to\s+(?:ship|merge|deploy|release|go)\b"),
+    # Prefer "completed" as a status verb, not "completely".
+    ("completed", r"\bcompleted\b"),
+    ("verified", r"\bverif(?:ied|ies)\b"),  # drop bare "verify" (imperative)
+    ("confirmed", r"\bconfirmed\b"),
+    # "fixed the bug" / "bug is fixed" / "is fixed." — not "fixed income".
+    (
+        "fixed",
+        r"\b(?:fix(?:ed|es)\s+(?:the|a|an|our|my|this|that|it)\b|"
+        r"(?:is|are|was|were|been)\s+fixed\b|"
+        r"\bfixed\s*[.!]|\bfixed\s*[—–\-:])",
+    ),
+    ("shipped", r"\bshipped\b"),
+    ("successfully", r"\bsuccessfully\s+(?:completed|deployed|shipped|fixed|migrated|released)\b"),
+    ("now_working", r"\bworks?\s+now\b|\bis\s+now\s+working\b"),
 ]
 
 # Strict set: broader, noisier words. Opt in with ``--strict``.
@@ -45,14 +81,25 @@ _STRICT_EXTRA = [
     ("hundred_pct", r"\b100\s*%\b"),
     ("good_to_go", r"\bgood\s+to\s+go\b"),
     ("no_issues", r"\bno\s+(?:issues|errors|problems|bugs)\b"),
+    # Loose "done" for teams that want every occurrence scanned.
+    ("done_loose", r"\bdone\b"),
 ]
 
 
-def claim_regexes(strict: bool = False):
-    """Return a list of ``(name, compiled_regex)`` claim patterns."""
-    items = list(_DEFAULT_CLAIMS)
+def claim_regexes(strict: bool = False, prose: bool = False):
+    """Return a list of ``(name, compiled_regex)`` claim patterns.
+
+    Parameters
+    ----------
+    strict:
+        Include the broader (noisier) claim word set.
+    prose:
+        Use the conservative prose-oriented claim set (fewer false positives
+        on narrative text). Compatible with ``strict`` extras.
+    """
+    items = list(_PROSE_CLAIMS if prose else _DEFAULT_CLAIMS)
     if strict:
-        items = items + _STRICT_EXTRA
+        items = items + list(_STRICT_EXTRA)
     return [(name, re.compile(pat, re.IGNORECASE)) for name, pat in items]
 
 

@@ -55,6 +55,9 @@ neo-evidence-gate report.md --json
 
 # broaden the claim vocabulary (more matches, more noise)
 neo-evidence-gate report.md --strict
+
+# narrative / long-form text: fewer false positives on ordinary "done"/"fixed"
+neo-evidence-gate notes.md --prose
 ```
 
 Exit code is `0` when the number of findings is `<= --max` (default `0`), and
@@ -118,11 +121,13 @@ that, because a tool about honesty should be honest.
 
 - It cannot tell whether the evidence is *real*, only whether *some* concrete
   evidence sits next to the claim. It raises the floor; it does not verify truth.
-- Natural-language claim detection has false positives (a stray "done" in prose)
-  and false negatives (a novel way to say "finished"). Tune with `--strict`,
-  `--window`, and `--back`, or hedge lines you don't want scanned.
+- Natural-language claim detection has false positives and false negatives.
+  The default `done` pattern requires completion-claim context (e.g. "all
+  done", "done.", "is done") rather than every English "done". For narrative
+  prose, pass `--prose` for a more conservative claim set. Still tune with
+  `--strict`, `--window`, and `--back`, or hedge lines you don't want scanned.
 - It is tuned for completion-report text (agent output, PRs, commits, task
-  logs), not arbitrary prose.
+  logs). Use `--prose` when pointing it at longer narrative writing.
 
 ## License
 
