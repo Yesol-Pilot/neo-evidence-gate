@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses
 [semantic versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- `.pre-commit-hooks.yaml` so the gate installs as a first-class pre-commit
+  repo (`neo-evidence-gate` for files, `neo-evidence-gate-commit-msg` for
+  commit messages). Documented `repo: https://github.com/Yesol-Pilot/neo-evidence-gate`
+  usage in the README.
+
 ## [0.1.0] - 2026-07-08
 
 Initial public release.
