@@ -47,6 +47,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--strict", action="store_true",
                    help="use the broader (noisier) claim word set")
+    p.add_argument(
+        "--prose",
+        action="store_true",
+        help=(
+            "use a more conservative claim set for narrative / long-form "
+            "text (fewer false positives on ordinary 'done' / 'fixed')"
+        ),
+    )
     p.add_argument("--window", type=int, default=4,
                    help="lines after a claim to search for evidence (default 4)")
     p.add_argument("--back", type=int, default=0,
@@ -72,7 +80,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         except OSError as exc:
             print(f"error: cannot read {path}: {exc}", file=sys.stderr)
             return 2
-        res = check_text(text, strict=args.strict, window=args.window, back=args.back)
+        res = check_text(
+            text,
+            strict=args.strict,
+            prose=args.prose,
+            window=args.window,
+            back=args.back,
+        )
         label = "stdin" if path == "-" else path
         for f in res.findings:
             all_findings.append({"file": label, **f.as_dict()})

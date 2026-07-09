@@ -58,6 +58,7 @@ def check_text(
     text: str,
     *,
     strict: bool = False,
+    prose: bool = False,
     window: int = 4,
     back: int = 0,
 ) -> GateResult:
@@ -67,13 +68,16 @@ def check_text(
     ----------
     strict:
         Include the broader (noisier) claim word set.
+    prose:
+        Use a more conservative claim set aimed at narrative text (fewer
+        false positives on ordinary English "done" / "fixed" / "working").
     window:
         Number of lines *after* a claim to search for evidence.
     back:
         Number of lines *before* a claim to search for evidence (default 0).
     """
     lines = text.splitlines()
-    claims = claim_regexes(strict=strict)
+    claims = claim_regexes(strict=strict, prose=prose)
     result = GateResult(lines_scanned=len(lines))
 
     for i, line in enumerate(lines):

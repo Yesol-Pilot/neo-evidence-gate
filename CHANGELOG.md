@@ -6,11 +6,18 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Tighten default `done` / `working` claim patterns so narrative uses
+  ("when she was done cooking", "well done", "I've done …") are not flagged.
+
 ### Added
 - `.pre-commit-hooks.yaml` so the gate installs as a first-class pre-commit
   repo (`neo-evidence-gate` for files, `neo-evidence-gate-commit-msg` for
   commit messages). Documented `repo: https://github.com/Yesol-Pilot/neo-evidence-gate`
   usage in the README.
+- `--prose` mode (and `check_text(..., prose=True)`) with a more conservative
+  claim set for long-form / narrative text. Before/after precision tests in
+  `tests/test_prose.py`.
 
 ## [0.1.0] - 2026-07-08
 
