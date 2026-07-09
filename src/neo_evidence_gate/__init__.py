@@ -9,7 +9,15 @@ Public API:
     >>> check_text("Fixed it.\\n$ pytest\\n12 passed").ok
     True
 """
+from .config import GateConfig, load_config
 from .gate import check_text, GateResult, Finding
 
-__all__ = ["check_text", "GateResult", "Finding", "__version__"]
+__all__ = [
+    "check_text",
+    "GateResult",
+    "Finding",
+    "GateConfig",
+    "load_config",
+    "__version__",
+]
 __version__ = "0.1.0"

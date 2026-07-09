@@ -7,6 +7,7 @@ import sys
 from typing import List, Optional
 
 from . import __version__
+from .config import load_config
 from .gate import check_text
 
 
@@ -51,6 +52,18 @@ def build_parser() -> argparse.ArgumentParser:
                    help="lines after a claim to search for evidence (default 4)")
     p.add_argument("--back", type=int, default=0,
                    help="lines before a claim to search for evidence (default 0)")
+    p.add_argument(
+        "--config",
+        metavar="PATH",
+        default=None,
+        help=(
+            "path to .neo-evidence-gate.toml (or pyproject.toml). "
+            "When omitted, walk up from the current directory for "
+            ".neo-evidence-gate.toml or [tool.neo-evidence-gate]."
+        ),
+    )
+    p.add_argument("--no-config", action="store_true",
+                   help="ignore project config files; use built-in patterns only")
     p.add_argument("--json", action="store_true",
                    help="emit findings as JSON")
     p.add_argument("--max", type=int, default=0, metavar="N",
@@ -65,6 +78,15 @@ def main(argv: Optional[List[str]] = None) -> int:
     args = build_parser().parse_args(argv)
     files = args.files or ["-"]
 
+    if args.no_config:
+        config = None
+    else:
+        try:
+            config = load_config(args.config, required=bool(args.config))
+        except Exception as exc:
+            print(f"error: cannot load config: {exc}", file=sys.stderr)
+            return 2
+
     all_findings = []
     for path in files:
         try:
@@ -72,7 +94,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         except OSError as exc:
             print(f"error: cannot read {path}: {exc}", file=sys.stderr)
             return 2
-        res = check_text(text, strict=args.strict, window=args.window, back=args.back)
+        res = check_text(
+            text,
+            strict=args.strict,
+            window=args.window,
+            back=args.back,
+            config=config,
+        )
         label = "stdin" if path == "-" else path
         for f in res.findings:
             all_findings.append({"file": label, **f.as_dict()})

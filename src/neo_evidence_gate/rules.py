@@ -48,11 +48,33 @@ _STRICT_EXTRA = [
 ]
 
 
-def claim_regexes(strict: bool = False):
-    """Return a list of ``(name, compiled_regex)`` claim patterns."""
-    items = list(_DEFAULT_CLAIMS)
+def claim_regexes(
+    strict: bool = False,
+    *,
+    extra=None,
+    replace=False,
+):
+    """Return a list of ``(name, compiled_regex)`` claim patterns.
+
+    Parameters
+    ----------
+    strict:
+        Include the broader (noisier) claim word set.
+    extra:
+        Optional sequence of ``(name, pattern_string)`` pairs to append
+        (or use exclusively when ``replace`` is True).
+    replace:
+        If True, ignore the built-in defaults and use only ``extra``
+        (plus strict extras when ``strict`` is True).
+    """
+    if replace:
+        items = list(extra or [])
+    else:
+        items = list(_DEFAULT_CLAIMS)
+        if extra:
+            items = items + list(extra)
     if strict:
-        items = items + _STRICT_EXTRA
+        items = items + list(_STRICT_EXTRA)
     return [(name, re.compile(pat, re.IGNORECASE)) for name, pat in items]
 
 
@@ -80,6 +102,17 @@ _EVIDENCE = [
 EVIDENCE_REGEXES = [re.compile(p, re.IGNORECASE | re.MULTILINE) for p in _EVIDENCE]
 
 
+def evidence_regexes(*, extra=None, replace=False):
+    """Return compiled evidence patterns, optionally extended or replaced."""
+    if replace:
+        pats = list(extra or [])
+    else:
+        pats = list(_EVIDENCE)
+        if extra:
+            pats = pats + list(extra)
+    return [re.compile(p, re.IGNORECASE | re.MULTILINE) for p in pats]
+
+
 # --- Hedge patterns -------------------------------------------------------
 
 _HEDGES = [
@@ -99,3 +132,14 @@ _HEDGES = [
     r"\bneeds?\s+(?:review|verification|testing)\b",
 ]
 HEDGE_REGEXES = [re.compile(p, re.IGNORECASE) for p in _HEDGES]
+
+
+def hedge_regexes(*, extra=None, replace=False):
+    """Return compiled hedge patterns, optionally extended or replaced."""
+    if replace:
+        pats = list(extra or [])
+    else:
+        pats = list(_HEDGES)
+        if extra:
+            pats = pats + list(extra)
+    return [re.compile(p, re.IGNORECASE) for p in pats]

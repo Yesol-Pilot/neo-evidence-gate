@@ -14,9 +14,10 @@ pass ``back=N``.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional, Union
 
-from .rules import claim_regexes, EVIDENCE_REGEXES, HEDGE_REGEXES
+from .config import GateConfig
+from .rules import claim_regexes, evidence_regexes, hedge_regexes
 
 
 @dataclass
@@ -60,6 +61,7 @@ def check_text(
     strict: bool = False,
     window: int = 4,
     back: int = 0,
+    config: Optional[Union[GateConfig, None]] = None,
 ) -> GateResult:
     """Scan ``text`` and return a :class:`GateResult`.
 
@@ -71,14 +73,31 @@ def check_text(
         Number of lines *after* a claim to search for evidence.
     back:
         Number of lines *before* a claim to search for evidence (default 0).
+    config:
+        Optional :class:`GateConfig` with project-specific pattern
+        extensions or replacements. When omitted, built-in defaults are used.
     """
     lines = text.splitlines()
-    claims = claim_regexes(strict=strict)
+    cfg = config or GateConfig()
+
+    claims = claim_regexes(
+        strict=strict,
+        extra=cfg.claims_add or None,
+        replace=cfg.claims_replace,
+    )
+    evidence = evidence_regexes(
+        extra=cfg.evidence_add or None,
+        replace=cfg.evidence_replace,
+    )
+    hedges = hedge_regexes(
+        extra=cfg.hedges_add or None,
+        replace=cfg.hedges_replace,
+    )
     result = GateResult(lines_scanned=len(lines))
 
     for i, line in enumerate(lines):
         # An honestly-hedged line is never an unsupported claim.
-        if any(h.search(line) for h in HEDGE_REGEXES):
+        if any(h.search(line) for h in hedges):
             continue
 
         matched = None
@@ -92,7 +111,7 @@ def check_text(
 
         result.claims_total += 1
         win = _window(lines, i, back, window)
-        if any(rx.search(win) for rx in EVIDENCE_REGEXES):
+        if any(rx.search(win) for rx in evidence):
             continue
 
         result.findings.append(

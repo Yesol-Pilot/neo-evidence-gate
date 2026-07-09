@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses
 [semantic versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Project config (`.neo-evidence-gate.toml` or `[tool.neo-evidence-gate]` in
+  `pyproject.toml`) to extend or replace claim / evidence / hedge patterns.
+  CLI: `--config PATH`, `--no-config`. Uses stdlib `tomllib` (3.11+) with an
+  optional `tomli` path on 3.9/3.10.
+
 ## [0.1.0] - 2026-07-08
 
 Initial public release.

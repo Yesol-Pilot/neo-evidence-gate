@@ -55,10 +55,41 @@ neo-evidence-gate report.md --json
 
 # broaden the claim vocabulary (more matches, more noise)
 neo-evidence-gate report.md --strict
+
+# ignore project config; use built-in patterns only
+neo-evidence-gate report.md --no-config
 ```
 
 Exit code is `0` when the number of findings is `<= --max` (default `0`), and
 `1` otherwise — so it drops straight into CI.
+
+### Project config
+
+Add custom claim / evidence / hedge patterns without forking. The gate reads
+(in order):
+
+1. `--config PATH` when given
+2. `.neo-evidence-gate.toml` walking up from the current directory
+3. `[tool.neo-evidence-gate]` in `pyproject.toml`
+
+```toml
+# .neo-evidence-gate.toml  (or [tool.neo-evidence-gate] in pyproject.toml)
+
+# Append claim patterns: [name, regex] pairs (or {name, pattern} tables)
+claims_add = [
+  ["ship_it", "\\bship it\\b"],
+]
+# claims_replace = true   # use only claims_add (plus --strict extras)
+
+# Append evidence / hedge regex strings
+evidence_add = ["\\bLGTM\\b"]
+hedges_add = ["\\bPENDING_REVIEW\\b"]
+# evidence_replace / hedges_replace work the same way
+```
+
+Requires Python 3.11+ (`tomllib`) or the optional [`tomli`](https://pypi.org/project/tomli/)
+package on 3.9/3.10. With neither available, the gate falls back to built-in
+patterns only.
 
 ### As a library
 
