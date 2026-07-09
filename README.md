@@ -55,10 +55,37 @@ neo-evidence-gate report.md --json
 
 # broaden the claim vocabulary (more matches, more noise)
 neo-evidence-gate report.md --strict
+
+# documented exceptions via ignore file
+neo-evidence-gate report.md --ignore-file .neo-evidence-gate-ignore
 ```
 
 Exit code is `0` when the number of findings is `<= --max` (default `0`), and
 `1` otherwise — so it drops straight into CI.
+
+### Suppressions
+
+Accept a **known** claim without lowering the whole gate:
+
+**Inline** — put a noqa pragma on the claim line:
+
+```text
+Migration completed for legacy tenants.  # noqa: evidence-gate
+```
+
+Also accepts `// noqa: evidence-gate` and `<!-- noqa: evidence-gate -->`.
+
+**Ignore file** — `.neo-evidence-gate-ignore` (auto-discovered walking up from
+cwd) or `--ignore-file PATH`:
+
+```text
+# whole file or glob
+docs/legacy-status.md
+reports/**/old-*.md
+
+# single line (1-indexed)
+examples/accepted.md:3
+```
 
 ### As a library
 
@@ -97,16 +124,18 @@ for f in result.findings: # []  (nothing unsupported)
 
 For every line, the gate:
 
-1. **Skips honest hedges.** A line containing `UNKNOWN`, `UNVERIFIED`, `TODO`,
+1. **Skips suppressions.** A line with `# noqa: evidence-gate` (or a matching
+   ignore-file entry) is left alone — an explicit, documented exception.
+2. **Skips honest hedges.** A line containing `UNKNOWN`, `UNVERIFIED`, `TODO`,
    `not yet tested`, `probably`, `assume`, `should`, `might`, `WIP`, ... is never
    a violation. Saying "I'm not sure" is the opposite of a false claim.
-2. **Detects a completion claim** (`done`, `tests pass`, `verified`, `fixed`,
+3. **Detects a completion claim** (`done`, `tests pass`, `verified`, `fixed`,
    `ready to ship`, ...).
-3. **Looks for evidence** on that line and in a short window *after* it:
+4. **Looks for evidence** on that line and in a short window *after* it:
    a fenced code block, a shell-prompt line, a URL, an inline code span, a file
    path, a numeric result (`12 passed`, `0 errors`, `exit code 0`, `180 ms`), or
    an explicit `evidence:` / `output:` / `readback:` lead-in.
-4. If the claim has no nearby evidence, it is **flagged**.
+5. If the claim has no nearby evidence, it is **flagged**.
 
 Evidence is looked for *after* the claim by default (`--back 0`): the habit the
 gate teaches is "state the claim, then show the proof."

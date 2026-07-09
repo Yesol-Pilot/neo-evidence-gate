@@ -8,6 +8,7 @@ from typing import List, Optional
 
 from . import __version__
 from .gate import check_text
+from .suppress import load_ignore
 
 
 def _make_output_utf8_safe() -> None:
@@ -51,6 +52,20 @@ def build_parser() -> argparse.ArgumentParser:
                    help="lines after a claim to search for evidence (default 4)")
     p.add_argument("--back", type=int, default=0,
                    help="lines before a claim to search for evidence (default 0)")
+    p.add_argument(
+        "--ignore-file",
+        metavar="PATH",
+        default=None,
+        help=(
+            "path to an ignore file (path:line or glob per line). "
+            "When omitted, walk up for .neo-evidence-gate-ignore."
+        ),
+    )
+    p.add_argument(
+        "--no-ignore",
+        action="store_true",
+        help="do not load an ignore file (inline # noqa still applies)",
+    )
     p.add_argument("--json", action="store_true",
                    help="emit findings as JSON")
     p.add_argument("--max", type=int, default=0, metavar="N",
@@ -65,6 +80,20 @@ def main(argv: Optional[List[str]] = None) -> int:
     args = build_parser().parse_args(argv)
     files = args.files or ["-"]
 
+    if args.no_ignore:
+        ignore = None
+    else:
+        try:
+            ignore = load_ignore(
+                args.ignore_file,
+                discover=args.ignore_file is None,
+            )
+            if ignore.empty:
+                ignore = None
+        except OSError as exc:
+            print(f"error: cannot read ignore file: {exc}", file=sys.stderr)
+            return 2
+
     all_findings = []
     for path in files:
         try:
@@ -72,8 +101,15 @@ def main(argv: Optional[List[str]] = None) -> int:
         except OSError as exc:
             print(f"error: cannot read {path}: {exc}", file=sys.stderr)
             return 2
-        res = check_text(text, strict=args.strict, window=args.window, back=args.back)
         label = "stdin" if path == "-" else path
+        res = check_text(
+            text,
+            strict=args.strict,
+            window=args.window,
+            back=args.back,
+            ignore=ignore,
+            path=label,
+        )
         for f in res.findings:
             all_findings.append({"file": label, **f.as_dict()})
 

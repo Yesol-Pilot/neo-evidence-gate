@@ -14,9 +14,10 @@ pass ``back=N``.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional, Set
 
 from .rules import claim_regexes, EVIDENCE_REGEXES, HEDGE_REGEXES
+from .suppress import IgnoreRules, line_suppressed
 
 
 @dataclass
@@ -60,6 +61,9 @@ def check_text(
     strict: bool = False,
     window: int = 4,
     back: int = 0,
+    ignore_lines: Optional[Set[int]] = None,
+    ignore: Optional[IgnoreRules] = None,
+    path: Optional[str] = None,
 ) -> GateResult:
     """Scan ``text`` and return a :class:`GateResult`.
 
@@ -71,12 +75,30 @@ def check_text(
         Number of lines *after* a claim to search for evidence.
     back:
         Number of lines *before* a claim to search for evidence (default 0).
+    ignore_lines:
+        Optional set of 1-indexed line numbers to skip (library convenience).
+    ignore:
+        Optional :class:`IgnoreRules` from an ignore file. Matched against
+        ``path`` when provided.
+    path:
+        File path label used when applying ``ignore`` rules.
     """
     lines = text.splitlines()
     claims = claim_regexes(strict=strict)
     result = GateResult(lines_scanned=len(lines))
+    ignored = ignore_lines or set()
 
     for i, line in enumerate(lines):
+        lineno = i + 1
+
+        # Explicit acceptance: inline noqa or ignore-file entry.
+        if line_suppressed(line):
+            continue
+        if lineno in ignored:
+            continue
+        if ignore is not None and path is not None and ignore.suppresses(path, lineno):
+            continue
+
         # An honestly-hedged line is never an unsupported claim.
         if any(h.search(line) for h in HEDGE_REGEXES):
             continue
@@ -96,7 +118,7 @@ def check_text(
             continue
 
         result.findings.append(
-            Finding(line=i + 1, text=line.strip(), claim=matched)
+            Finding(line=lineno, text=line.strip(), claim=matched)
         )
 
     return result

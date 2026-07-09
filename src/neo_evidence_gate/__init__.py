@@ -10,6 +10,15 @@ Public API:
     True
 """
 from .gate import check_text, GateResult, Finding
+from .suppress import IgnoreRules, load_ignore, line_suppressed
 
-__all__ = ["check_text", "GateResult", "Finding", "__version__"]
+__all__ = [
+    "check_text",
+    "GateResult",
+    "Finding",
+    "IgnoreRules",
+    "load_ignore",
+    "line_suppressed",
+    "__version__",
+]
 __version__ = "0.1.0"
