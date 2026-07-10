@@ -133,3 +133,5 @@ option. Contributions are accepted under the same terms.
 
 `neo-evidence-gate` is part of [Neo Genesis](https://neogenesis.app), where the
 same principle governs the agent runtime itself: no `DONE` without evidence.
+
+Config fields: [docs/config-schema.md](docs/config-schema.md).
