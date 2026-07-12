@@ -37,12 +37,11 @@ turned into a command you can run.
 ## Install
 
 ```bash
-python -m pip install "git+https://github.com/Yesol-Pilot/neo-evidence-gate.git@21330b9"
+python -m pip install "git+https://github.com/Yesol-Pilot/neo-evidence-gate.git@v0.1.0"
 ```
 
-The project is not published on PyPI yet. The commit pin above keeps installs
-reproducible until the first package release. Requires Python 3.9+. No
-third-party runtime dependencies.
+The project is not published on PyPI yet. The command above installs the public
+`v0.1.0` release. Requires Python 3.9+. No third-party runtime dependencies.
 
 ## Use
 
@@ -82,7 +81,8 @@ for f in result.findings: # []  (nothing unsupported)
   env:
     PR_BODY: ${{ github.event.pull_request.body }}
   run: |
-    python -m pip install "git+https://github.com/Yesol-Pilot/neo-evidence-gate.git@21330b9"
+    # Immutable commit for the v0.1.0 release
+    python -m pip install "git+https://github.com/Yesol-Pilot/neo-evidence-gate.git@523522060d800289366a1f68c44f686bddbd96e3"
     printf '%s' "$PR_BODY" | neo-evidence-gate -
 ```
 
