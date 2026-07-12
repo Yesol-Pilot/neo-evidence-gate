@@ -1,0 +1,17 @@
+# Hook definitions for https://pre-commit.com/
+# Consumers reference this repo in .pre-commit-config.yaml (see README).
+
+- id: neo-evidence-gate
+  name: neo-evidence-gate (files)
+  description: Flag completion claims in staged files that lack nearby evidence.
+  entry: neo-evidence-gate
+  language: python
+  types_or: [markdown, text, rst]
+  stages: [pre-commit]
+
+- id: neo-evidence-gate-commit-msg
+  name: neo-evidence-gate (commit message)
+  description: Flag completion claims in the commit message that lack nearby evidence.
+  entry: neo-evidence-gate
+  language: python
+  stages: [commit-msg]

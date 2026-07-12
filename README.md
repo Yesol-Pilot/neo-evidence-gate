@@ -88,6 +88,22 @@ for f in result.findings: # []  (nothing unsupported)
 
 ### As a pre-commit hook
 
+Point pre-commit at this repo (installs the package into the hook env):
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/Yesol-Pilot/neo-evidence-gate
+    rev: v0.1.0   # use a tag or commit SHA
+    hooks:
+      # commit message
+      - id: neo-evidence-gate-commit-msg
+      # optional: staged markdown/text files
+      - id: neo-evidence-gate
+```
+
+Or keep a local/system install if the CLI is already on `PATH`:
+
 ```yaml
 # .pre-commit-config.yaml
 - repo: local
