@@ -102,6 +102,13 @@ repos:
       - id: neo-evidence-gate
 ```
 
+Install both Git hook types:
+
+```bash
+pre-commit install
+pre-commit install --hook-type commit-msg
+```
+
 Or keep a local/system install if the CLI is already on `PATH`:
 
 ```yaml
