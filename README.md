@@ -1,5 +1,7 @@
 # neo-evidence-gate
 
+[![CI](https://github.com/Yesol-Pilot/neo-evidence-gate/actions/workflows/ci.yml/badge.svg)](https://github.com/Yesol-Pilot/neo-evidence-gate/actions/workflows/ci.yml)
+
 **An honesty linter for completion claims.** It flags lines that say a task is
 *done* — `DONE`, `PASS`, `READY`, `VERIFIED`, `fixed`, `works now`, `shipped` —
 when there is **no evidence** next to the claim.
@@ -35,10 +37,12 @@ turned into a command you can run.
 ## Install
 
 ```bash
-pip install neo-evidence-gate
+python -m pip install "git+https://github.com/Yesol-Pilot/neo-evidence-gate.git@21330b9"
 ```
 
-Requires Python 3.9+. No third-party runtime dependencies.
+The project is not published on PyPI yet. The commit pin above keeps installs
+reproducible until the first package release. Requires Python 3.9+. No
+third-party runtime dependencies.
 
 ## Use
 
@@ -75,9 +79,11 @@ for f in result.findings: # []  (nothing unsupported)
 
 ```yaml
 - name: Evidence gate on the PR body
+  env:
+    PR_BODY: ${{ github.event.pull_request.body }}
   run: |
-    pip install neo-evidence-gate
-    printf '%s' "${{ github.event.pull_request.body }}" | neo-evidence-gate -
+    python -m pip install "git+https://github.com/Yesol-Pilot/neo-evidence-gate.git@21330b9"
+    printf '%s' "$PR_BODY" | neo-evidence-gate -
 ```
 
 ### As a pre-commit hook
@@ -133,3 +139,4 @@ option. Contributions are accepted under the same terms.
 
 `neo-evidence-gate` is part of [Neo Genesis](https://neogenesis.app), where the
 same principle governs the agent runtime itself: no `DONE` without evidence.
+
