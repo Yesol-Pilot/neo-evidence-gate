@@ -55,69 +55,53 @@ jobs:
           token = os.environ.get('GH_TOKEN', '')
           self_test_only = os.environ.get('SELF_TEST_ONLY', '').lower() == 'true'
           errors: list[str] = []
-          notes: list[str] = []
 
-          # Prefix boundaries are mandatory. Without them, ordinary identifiers
-          # such as task-execution, risk-register, desk-state and mask-value are
-          # misclassified merely because they contain the substring "sk-".
           secret_patterns: tuple[tuple[str, re.Pattern[str]], ...] = (
-              (
-                  'GitHub classic token',
-                  re.compile(r'(?<![A-Za-z0-9_])gh[pousr]_[A-Za-z0-9]{36,255}(?![A-Za-z0-9])'),
-              ),
-              (
-                  'GitHub fine-grained token',
-                  re.compile(r'(?<![A-Za-z0-9_])github_pat_[A-Za-z0-9_]{40,255}(?![A-Za-z0-9_])'),
-              ),
-              (
-                  'OpenAI project or service key',
-                  re.compile(
-                      r'(?<![A-Za-z0-9_-])sk-(?:proj|svcacct)-[A-Za-z0-9_-]{20,255}'
-                      r'(?![A-Za-z0-9_-])'
-                  ),
-              ),
-              (
-                  'OpenAI legacy key',
-                  re.compile(r'(?<![A-Za-z0-9_-])sk-[A-Za-z0-9]{32,255}(?![A-Za-z0-9_-])'),
-              ),
-              (
-                  'Anthropic key',
-                  re.compile(r'(?<![A-Za-z0-9_-])sk-ant-[A-Za-z0-9_-]{20,255}(?![A-Za-z0-9_-])'),
-              ),
-              (
-                  'xAI key',
-                  re.compile(r'(?<![A-Za-z0-9_-])xai-[A-Za-z0-9_-]{20,255}(?![A-Za-z0-9_-])'),
-              ),
-              (
-                  'AWS access key',
-                  re.compile(r'(?<![0-9A-Z])AKIA[0-9A-Z]{16}(?![0-9A-Z])'),
-              ),
-              (
-                  'Google API key',
-                  re.compile(r'(?<![0-9A-Za-z_-])AIza[0-9A-Za-z_-]{35}(?![0-9A-Za-z_-])'),
-              ),
-              (
-                  'Slack token',
-                  re.compile(r'(?<![0-9A-Za-z-])xox[baprs]-[0-9A-Za-z-]{20,255}(?![0-9A-Za-z-])'),
-              ),
-              (
-                  'Stripe live secret',
-                  re.compile(r'(?<![0-9A-Za-z_])sk_live_[0-9A-Za-z]{16,255}(?![0-9A-Za-z])'),
-              ),
-              (
-                  'Hugging Face token',
-                  re.compile(r'(?<![0-9A-Za-z_])hf_[0-9A-Za-z]{30,255}(?![0-9A-Za-z])'),
-              ),
-              (
-                  'Private key header',
-                  re.compile(r'-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----'),
-              ),
+              ('GitHub classic token', re.compile(
+                  r'(?<![A-Za-z0-9_])gh[pousr]_[A-Za-z0-9]{36,255}(?![A-Za-z0-9])'
+              )),
+              ('GitHub fine-grained token', re.compile(
+                  r'(?<![A-Za-z0-9_])github_pat_[A-Za-z0-9_]{40,255}(?![A-Za-z0-9_])'
+              )),
+              ('OpenAI project or service key', re.compile(
+                  r'(?<![A-Za-z0-9_-])sk-(?:proj|svcacct)-[A-Za-z0-9_-]{20,255}'
+                  r'(?![A-Za-z0-9_-])'
+              )),
+              ('OpenAI legacy key', re.compile(
+                  r'(?<![A-Za-z0-9_-])sk-[A-Za-z0-9]{32,255}(?![A-Za-z0-9_-])'
+              )),
+              ('Anthropic key', re.compile(
+                  r'(?<![A-Za-z0-9_-])sk-ant-[A-Za-z0-9_-]{20,255}(?![A-Za-z0-9_-])'
+              )),
+              ('xAI key', re.compile(
+                  r'(?<![A-Za-z0-9_-])xai-[A-Za-z0-9_-]{20,255}(?![A-Za-z0-9_-])'
+              )),
+              ('AWS access key', re.compile(
+                  r'(?<![0-9A-Z])AKIA[0-9A-Z]{16}(?![0-9A-Z])'
+              )),
+              ('Google API key', re.compile(
+                  r'(?<![0-9A-Za-z_-])AIza[0-9A-Za-z_-]{35}(?![0-9A-Za-z_-])'
+              )),
+              ('Slack token', re.compile(
+                  r'(?<![0-9A-Za-z-])xox[baprs]-[0-9A-Za-z-]{20,255}(?![0-9A-Za-z-])'
+              )),
+              ('Stripe live secret', re.compile(
+                  r'(?<![0-9A-Za-z_])sk_live_[0-9A-Za-z]{16,255}(?![0-9A-Za-z])'
+              )),
+              ('Hugging Face token', re.compile(
+                  r'(?<![0-9A-Za-z_])hf_[0-9A-Za-z]{30,255}(?![0-9A-Za-z])'
+              )),
+              ('Private key header', re.compile(
+                  r'-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----'
+              )),
           )
 
           def matching_secret_labels(line: str) -> list[str]:
               return [label for label, pattern in secret_patterns if pattern.search(line)]
 
-          def setting_finding(settings: Mapping[str, object], key: str, expected: bool) -> str | None:
+          def setting_finding(
+              settings: Mapping[str, object], key: str, expected: bool
+          ) -> str | None:
               if key not in settings or type(settings.get(key)) is not bool:
                   return f'repository setting {key} is UNVERIFIED (field unavailable)'
               actual = settings[key]
@@ -126,7 +110,7 @@ jobs:
               return None
 
           def run_validator_self_tests() -> None:
-              negative_lines = (
+              negatives = (
                   'task-execution-listener.ts',
                   'risk-classification',
                   'desktop-task-service',
@@ -135,12 +119,12 @@ jobs:
                   'ask-followup-question',
                   'the sk-prefix is discussed without a credential',
               )
-              for line in negative_lines:
+              for line in negatives:
                   labels = matching_secret_labels(line)
                   if labels:
-                      raise AssertionError(f'false-positive secret match for {line!r}: {labels}')
+                      raise AssertionError(f'false-positive match for {line!r}: {labels}')
 
-              positive_lines = {
+              positives = {
                   'GitHub classic token': 'ghp_' + ('A1' * 18),
                   'GitHub fine-grained token': 'github_pat_' + ('A1_' * 14),
                   'OpenAI project or service key': 'sk-' + 'proj-' + ('A1_' * 10),
@@ -152,29 +136,33 @@ jobs:
                   'Slack token': 'xoxb-' + ('A1-' * 8),
                   'Stripe live secret': 'sk_' + 'live_' + ('A1' * 8),
                   'Hugging Face token': 'hf_' + ('A1' * 15),
-                  'Private key header': '-----BEGIN PRIVATE KEY-----',
+                  'Private key header': '-----BEGIN ' + 'PRIVATE' + ' KEY-----',
               }
-              for expected_label, line in positive_lines.items():
-                  labels = matching_secret_labels(line)
-                  if expected_label not in labels:
+              for expected, line in positives.items():
+                  observed = matching_secret_labels(line)
+                  if expected not in observed:
                       raise AssertionError(
-                          f'secret detector missed synthetic {expected_label}: observed={labels}'
+                          f'secret detector missed synthetic {expected}: {observed}'
                       )
 
-              if setting_finding({}, 'allow_squash_merge', True) != (
-                  'repository setting allow_squash_merge is UNVERIFIED (field unavailable)'
-              ):
-                  raise AssertionError('missing repository setting did not remain UNVERIFIED')
-              if setting_finding({'allow_squash_merge': None}, 'allow_squash_merge', True) != (
-                  'repository setting allow_squash_merge is UNVERIFIED (field unavailable)'
-              ):
-                  raise AssertionError('null repository setting did not remain UNVERIFIED')
-              if setting_finding({'allow_squash_merge': False}, 'allow_squash_merge', True) != (
-                  'repository setting allow_squash_merge must be True, got False'
-              ):
-                  raise AssertionError('confirmed repository setting mismatch was not rejected')
-              if setting_finding({'allow_squash_merge': True}, 'allow_squash_merge', True) is not None:
-                  raise AssertionError('matching repository setting was rejected')
+              expected_unverified = (
+                  'repository setting allow_squash_merge is UNVERIFIED '
+                  '(field unavailable)'
+              )
+              if setting_finding({}, 'allow_squash_merge', True) != expected_unverified:
+                  raise AssertionError('missing setting did not remain UNVERIFIED')
+              if setting_finding(
+                  {'allow_squash_merge': None}, 'allow_squash_merge', True
+              ) != expected_unverified:
+                  raise AssertionError('null setting did not remain UNVERIFIED')
+              if setting_finding(
+                  {'allow_squash_merge': False}, 'allow_squash_merge', True
+              ) != 'repository setting allow_squash_merge must be True, got False':
+                  raise AssertionError('confirmed mismatch was not rejected')
+              if setting_finding(
+                  {'allow_squash_merge': True}, 'allow_squash_merge', True
+              ) is not None:
+                  raise AssertionError('matching setting was rejected')
 
           run_validator_self_tests()
           if self_test_only:
@@ -185,12 +173,12 @@ jobs:
           allowlist: dict[str, object] = {}
           if allowlist_path.is_file():
               try:
-                  allowlist = json.loads(allowlist_path.read_text(encoding='utf-8'))
-                  if not isinstance(allowlist, dict):
+                  value = json.loads(allowlist_path.read_text(encoding='utf-8'))
+                  if not isinstance(value, dict):
                       raise ValueError('root must be an object')
+                  allowlist = value
               except Exception as exc:
                   errors.append(f'invalid governance allowlist: {type(exc).__name__}')
-                  allowlist = {}
 
           allowed_paths = {
               str(value) for value in allowlist.get('allowedPaths', [])
@@ -209,27 +197,73 @@ jobs:
               errors.append(message)
 
           settings: dict[str, object] = {}
-          if not repository or not token:
-              record('repository settings are UNVERIFIED: repository identity or GitHub token unavailable')
+          if not repository or not token or '/' not in repository:
+              record(
+                  'repository settings are UNVERIFIED: '
+                  'repository identity or GitHub token unavailable'
+              )
           else:
+              owner, name = repository.split('/', 1)
+              query = '''
+              query RepositoryGovernance($owner: String!, $name: String!) {
+                repository(owner: $owner, name: $name) {
+                  defaultBranchRef { name }
+                  squashMergeAllowed
+                  mergeCommitAllowed
+                  rebaseMergeAllowed
+                  deleteBranchOnMerge
+                  allowUpdateBranch
+                  autoMergeAllowed
+                }
+              }
+              '''
               request = urllib.request.Request(
-                  f'https://api.github.com/repos/{repository}',
+                  'https://api.github.com/graphql',
+                  data=json.dumps({
+                      'query': query,
+                      'variables': {'owner': owner, 'name': name},
+                  }).encode('utf-8'),
                   headers={
                       'Accept': 'application/vnd.github+json',
                       'Authorization': f'Bearer {token}',
+                      'Content-Type': 'application/json',
                       'X-GitHub-Api-Version': '2022-11-28',
                       'User-Agent': 'neogenesis-repository-governance',
                   },
+                  method='POST',
               )
               try:
                   with urllib.request.urlopen(request, timeout=20) as response:
-                      value = json.load(response)
-                      if isinstance(value, dict):
-                          settings = value
-                      else:
-                          record('repository settings are UNVERIFIED: API response is not an object')
+                      payload = json.load(response)
+                  graph_errors = payload.get('errors') if isinstance(payload, dict) else None
+                  repo_data = (
+                      payload.get('data', {}).get('repository')
+                      if isinstance(payload, dict)
+                      and isinstance(payload.get('data'), dict)
+                      else None
+                  )
+                  if graph_errors or not isinstance(repo_data, dict):
+                      record('repository settings are UNVERIFIED: GraphQL read failed')
+                  else:
+                      default_ref = repo_data.get('defaultBranchRef')
+                      settings = {
+                          'allow_squash_merge': repo_data.get('squashMergeAllowed'),
+                          'allow_merge_commit': repo_data.get('mergeCommitAllowed'),
+                          'allow_rebase_merge': repo_data.get('rebaseMergeAllowed'),
+                          'delete_branch_on_merge': repo_data.get('deleteBranchOnMerge'),
+                          'allow_update_branch': repo_data.get('allowUpdateBranch'),
+                          'allow_auto_merge': repo_data.get('autoMergeAllowed'),
+                          'default_branch': (
+                              default_ref.get('name')
+                              if isinstance(default_ref, dict)
+                              else None
+                          ),
+                      }
               except Exception as exc:
-                  record(f'repository settings are UNVERIFIED: {type(exc).__name__}')
+                  record(
+                      f'repository settings are UNVERIFIED: GraphQL '
+                      f'{type(exc).__name__}'
+                  )
 
           contract = root / 'REPOSITORY_GOVERNANCE.md'
           if not contract.is_file():
@@ -237,12 +271,21 @@ jobs:
           else:
               text = contract.read_text(encoding='utf-8', errors='replace')
               if 'ng-repo-governance/1.0.0' not in text:
-                  record('repository contract does not identify policy ng-repo-governance/1.0.0')
+                  record(
+                      'repository contract does not identify policy '
+                      'ng-repo-governance/1.0.0'
+                  )
               normalized = text.replace('`', '').lower()
-              if 'unknown' not in normalized or 'must never be reported as pass' not in normalized:
+              if (
+                  'unknown' not in normalized
+                  or 'must never be reported as pass' not in normalized
+              ):
                   record('repository contract does not define UNKNOWN as non-PASS')
               if 'presence of this file alone' not in normalized:
-                  record('repository contract does not prohibit documentation-only compliance')
+                  record(
+                      'repository contract does not prohibit '
+                      'documentation-only compliance'
+                  )
 
           required_settings = {
               'allow_squash_merge': True,
@@ -257,28 +300,34 @@ jobs:
               if finding:
                   record(finding)
 
-          default_branch_value = settings.get('default_branch')
-          if not isinstance(default_branch_value, str) or not default_branch_value:
+          default_value = settings.get('default_branch')
+          if not isinstance(default_value, str) or not default_value:
               record('repository default branch is UNVERIFIED (field unavailable)')
               default_branch = ''
           else:
-              default_branch = default_branch_value
+              default_branch = default_value
 
           approved_exceptions = {
               'NeoGenesisAI/neomux-desktop': 'einstein/main',
           }
-          task_prefixes = ('codex/', 'rebuild/', 'feature/', 'fix/', 'chore/', 'governance/')
+          task_prefixes = (
+              'codex/', 'rebuild/', 'feature/', 'fix/', 'chore/', 'governance/'
+          )
           expected_exception = approved_exceptions.get(repository)
           if expected_exception and default_branch:
               if default_branch != expected_exception:
                   record(
-                      f'documented default-branch exception drifted: expected {expected_exception}, got {default_branch}'
+                      'documented default-branch exception drifted: '
+                      f'expected {expected_exception}, got {default_branch}'
                   )
           elif default_branch.startswith(task_prefixes):
               record(f'task branch is configured as repository default: {default_branch}')
 
           tracked = subprocess.check_output(['git', 'ls-files', '-z']).split(b'\0')
-          tracked_paths = [p.decode('utf-8', errors='surrogateescape') for p in tracked if p]
+          tracked_paths = [
+              value.decode('utf-8', errors='surrogateescape')
+              for value in tracked if value
+          ]
 
           allowed_env_names = {
               '.env.example', '.env.sample', '.env.template', '.env.local.example'
@@ -300,13 +349,15 @@ jobs:
               path = pathlib.PurePosixPath(raw)
               name = path.name
               parts = set(path.parts)
-              if name == '.env' or (name.startswith('.env.') and name not in allowed_env_names):
+              if name == '.env' or (
+                  name.startswith('.env.') and name not in allowed_env_names
+              ):
                   record(f'prohibited environment file is tracked: {raw}', raw)
               if name in forbidden_names or name.endswith(forbidden_suffixes):
                   record(f'prohibited credential or signing file is tracked: {raw}', raw)
-              matching_generated = sorted(parts & generated_parts)
-              if matching_generated:
-                  generated_paths.add(f'{matching_generated[0]} in {raw}')
+              generated = sorted(parts & generated_parts)
+              if generated:
+                  generated_paths.add(f'{generated[0]} in {raw}')
 
           for generated_path in sorted(generated_paths):
               record(f'generated or dependency directory is tracked: {generated_path}')
@@ -318,6 +369,7 @@ jobs:
               '.bash', '.zsh', '.ps1', '.xml', '.html', '.css', '.scss', '.sql',
               '.gradle', '.properties', '.conf', '.config'
           }
+          special_text_names = {'Dockerfile', 'Makefile', 'Gemfile', 'Podfile'}
 
           for raw in tracked_paths:
               path = root / raw
@@ -326,9 +378,10 @@ jobs:
                   continue
               if not path.is_file() or path.stat().st_size > 2_000_000:
                   continue
-              if path.suffix.lower() not in text_extensions and path.name not in {
-                  'Dockerfile', 'Makefile', 'Gemfile', 'Podfile'
-              }:
+              if (
+                  path.suffix.lower() not in text_extensions
+                  and path.name not in special_text_names
+              ):
                   continue
               try:
                   content = path.read_text(encoding='utf-8')
@@ -350,17 +403,17 @@ jobs:
           if unique_errors:
               summary_lines.extend(['', '### Fail-closed findings', ''])
               summary_lines.extend(f'- `{item}`' for item in unique_errors)
-          if notes:
-              summary_lines.extend(['', '### Notes', ''])
-              summary_lines.extend(f'- {item}' for item in notes)
           if summary_path:
-              pathlib.Path(summary_path).write_text('\n'.join(summary_lines) + '\n', encoding='utf-8')
+              pathlib.Path(summary_path).write_text(
+                  '\n'.join(summary_lines) + '\n', encoding='utf-8'
+              )
 
           if unique_errors:
               for item in unique_errors:
                   print(f'::error::{item}')
               print(
-                  f'repository-governance failed with {len(unique_errors)} unique finding(s)',
+                  f'repository-governance failed with '
+                  f'{len(unique_errors)} unique finding(s)',
                   file=sys.stderr,
               )
               raise SystemExit(1)
