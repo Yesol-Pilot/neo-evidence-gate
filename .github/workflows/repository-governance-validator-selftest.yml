@@ -10,6 +10,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: repository-governance-validator-selftest-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validator-self-test:
     uses: ./.github/workflows/repository-governance-reusable.yml
