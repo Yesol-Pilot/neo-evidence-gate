@@ -24,191 +24,30 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
 
-      - name: Validate contract, GitHub settings, and tracked content
+      - name: Check out governance implementation
+        if: github.repository != 'NeoGenesisAI/evidence-gate'
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: NeoGenesisAI/evidence-gate
+          ref: main
+          path: .neo-evidence-gate-runtime
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Validate contract, observable settings, and current tree
         shell: bash
         env:
           REPOSITORY: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          from __future__ import annotations
-
-          import json
-          import os
-          import pathlib
-          import re
-          import subprocess
-          import sys
-          import urllib.request
-
-          root = pathlib.Path('.')
-          repository = os.environ.get('REPOSITORY', '')
-          token = os.environ.get('GH_TOKEN', '')
-          errors: list[str] = []
-
-          allowlist_path = root / '.github' / 'repository-governance-allowlist.json'
-          allowlist: dict[str, object] = {}
-          if allowlist_path.is_file():
-              try:
-                  allowlist = json.loads(allowlist_path.read_text(encoding='utf-8'))
-                  if not isinstance(allowlist, dict):
-                      raise ValueError('root must be an object')
-              except Exception as exc:
-                  errors.append(f'invalid governance allowlist: {type(exc).__name__}')
-                  allowlist = {}
-
-          allowed_paths = {
-              str(value) for value in allowlist.get('allowedPaths', [])
-              if isinstance(value, str)
-          }
-          allowed_findings = {
-              str(value) for value in allowlist.get('allowedFindings', [])
-              if isinstance(value, str)
-          }
-
-          def record(message: str, path: str | None = None) -> None:
-              if path and path in allowed_paths:
-                  return
-              if message in allowed_findings:
-                  return
-              errors.append(message)
-
-          if not repository or not token:
-              record('repository identity or GitHub token is unavailable')
-              settings = {}
-          else:
-              request = urllib.request.Request(
-                  f'https://api.github.com/repos/{repository}',
-                  headers={
-                      'Accept': 'application/vnd.github+json',
-                      'Authorization': f'Bearer {token}',
-                      'X-GitHub-Api-Version': '2022-11-28',
-                      'User-Agent': 'neogenesis-repository-governance',
-                  },
-              )
-              try:
-                  with urllib.request.urlopen(request, timeout=20) as response:
-                      settings = json.load(response)
-              except Exception as exc:
-                  settings = {}
-                  record(f'cannot read repository settings: {type(exc).__name__}')
-
-          contract = root / 'REPOSITORY_GOVERNANCE.md'
-          if not contract.is_file():
-              record('REPOSITORY_GOVERNANCE.md is missing')
-          else:
-              text = contract.read_text(encoding='utf-8', errors='replace')
-              if 'ng-repo-governance/1.0.0' not in text:
-                  record('repository contract does not identify policy ng-repo-governance/1.0.0')
-              normalized = text.replace('`', '').lower()
-              if 'unknown' not in normalized or 'must never be reported as pass' not in normalized:
-                  record('repository contract does not define UNKNOWN as non-PASS')
-              if 'presence of this file alone' not in normalized:
-                  record('repository contract does not prohibit documentation-only compliance')
-
-          required_settings = {
-              'allow_squash_merge': True,
-              'allow_merge_commit': False,
-              'allow_rebase_merge': False,
-              'delete_branch_on_merge': True,
-              'allow_update_branch': True,
-              'allow_auto_merge': True,
-          }
-          for key, expected in required_settings.items():
-              actual = settings.get(key)
-              if actual is not expected:
-                  record(f'repository setting {key} must be {expected}, got {actual}')
-
-          default_branch = str(settings.get('default_branch') or '')
-          approved_exceptions = {
-              'NeoGenesisAI/neomux-desktop': 'einstein/main',
-          }
-          task_prefixes = ('codex/', 'rebuild/', 'feature/', 'fix/', 'chore/', 'governance/')
-          expected_exception = approved_exceptions.get(repository)
-          if expected_exception:
-              if default_branch != expected_exception:
-                  record(
-                      f'documented default-branch exception drifted: expected {expected_exception}, got {default_branch}'
-                  )
-          elif default_branch.startswith(task_prefixes):
-              record(f'task branch is configured as repository default: {default_branch}')
-
-          tracked = subprocess.check_output(['git', 'ls-files', '-z']).split(b'\0')
-          tracked_paths = [p.decode('utf-8', errors='surrogateescape') for p in tracked if p]
-
-          allowed_env_names = {
-              '.env.example', '.env.sample', '.env.template', '.env.local.example'
-          }
-          forbidden_names = {
-              'credentials.json', 'service-account.json', 'service_account.json',
-              'cookies.json', 'session.json', 'oauth.json', 'token.json'
-          }
-          forbidden_suffixes = (
-              '.pem', '.p12', '.pfx', '.keystore', '.jks', '.mobileprovision'
-          )
-          generated_parts = {
-              'node_modules', '__pycache__', '.venv', 'venv', '.next',
-              'coverage', 'Library', 'Temp', 'obj', '.gradle'
-          }
-
-          for raw in tracked_paths:
-              path = pathlib.PurePosixPath(raw)
-              name = path.name
-              parts = set(path.parts)
-              if name == '.env' or (name.startswith('.env.') and name not in allowed_env_names):
-                  record(f'prohibited environment file is tracked: {raw}', raw)
-              if name in forbidden_names or name.endswith(forbidden_suffixes):
-                  record(f'prohibited credential or signing file is tracked: {raw}', raw)
-              if parts & generated_parts:
-                  record(f'generated or dependency directory is tracked: {raw}', raw)
-
-          secret_patterns = [
-              ('GitHub classic token', re.compile(r'gh[pousr]_[A-Za-z0-9]{36,}')),
-              ('GitHub fine-grained token', re.compile(r'github_pat_[A-Za-z0-9_]{40,}')),
-              ('OpenAI secret key', re.compile(r'sk-(?:proj-)?[A-Za-z0-9_-]{20,}')),
-              ('AWS access key', re.compile(r'AKIA[0-9A-Z]{16}')),
-              ('Google API key', re.compile(r'AIza[0-9A-Za-z_-]{35}')),
-              ('Slack token', re.compile(r'xox[baprs]-[0-9A-Za-z-]{20,}')),
-              ('Stripe live secret', re.compile(r'sk_live_[0-9A-Za-z]{16,}')),
-              ('Private key header', re.compile(r'-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----')),
-          ]
-          text_extensions = {
-              '.txt', '.md', '.json', '.jsonc', '.yaml', '.yml', '.toml', '.ini',
-              '.env', '.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs', '.py', '.rb',
-              '.php', '.go', '.rs', '.java', '.kt', '.kts', '.cs', '.swift', '.sh',
-              '.bash', '.zsh', '.ps1', '.xml', '.html', '.css', '.scss', '.sql',
-              '.gradle', '.properties', '.conf', '.config'
-          }
-          ignored_markers = ('REDACTED', 'EXAMPLE', 'DUMMY', 'PLACEHOLDER')
-
-          for raw in tracked_paths:
-              path = root / raw
-              if raw in allowed_paths:
-                  continue
-              if not path.is_file() or path.stat().st_size > 2_000_000:
-                  continue
-              if path.suffix.lower() not in text_extensions and path.name not in {
-                  'Dockerfile', 'Makefile', 'Gemfile', 'Podfile'
-              }:
-                  continue
-              try:
-                  content = path.read_text(encoding='utf-8')
-              except UnicodeDecodeError:
-                  continue
-              for line_number, line in enumerate(content.splitlines(), start=1):
-                  if any(marker in line.upper() for marker in ignored_markers):
-                      continue
-                  for label, pattern in secret_patterns:
-                      if pattern.search(line):
-                          record(f'{label} pattern detected at {raw}:{line_number}', raw)
-
-          unique_errors = sorted(set(errors))
-          if unique_errors:
-              for item in unique_errors:
-                  print(f'::error::{item}')
-              print(f'repository-governance failed with {len(unique_errors)} unique finding(s)', file=sys.stderr)
-              raise SystemExit(1)
-
-          print('repository-governance PASS')
-          PY
+          if [[ "$REPOSITORY" == "NeoGenesisAI/evidence-gate" ]]; then
+            GOVERNANCE_SOURCE="$GITHUB_WORKSPACE/src"
+          else
+            GOVERNANCE_SOURCE="$GITHUB_WORKSPACE/.neo-evidence-gate-runtime/src"
+          fi
+          PYTHONPATH="$GOVERNANCE_SOURCE" \
+            python3 -m neo_evidence_gate.repository_governance \
+              --root "$GITHUB_WORKSPACE" \
+              --repository "$REPOSITORY" \
+              --defer-admin-audit

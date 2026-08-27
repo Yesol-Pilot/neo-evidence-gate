@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0.0",
+  "syntheticSecretFixtures": [
+    {
+      "path": "tests/test_repository_governance.py",
+      "blobSha": "6e81b2ff32bc164911ba08477b78930ba212e2bc",
+      "labels": [
+        "OpenAI secret key",
+        "GitHub classic token"
+      ],
+      "reason": "The validator regression suite must contain realistic provider-token shapes to prove boundary and entropy behavior. The exception is invalidated by any file-content change.",
+      "owner": "NeoGenesisAI security governance",
+      "expiresAt": "2027-08-28"
+    }
+  ]
+}
