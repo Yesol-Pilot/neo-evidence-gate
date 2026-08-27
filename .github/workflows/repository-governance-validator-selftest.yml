@@ -1,0 +1,17 @@
+name: Repository Governance Validator Self-test
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/repository-governance-reusable.yml"
+      - ".github/workflows/repository-governance-validator-selftest.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validator-self-test:
+    uses: ./.github/workflows/repository-governance-reusable.yml
+    with:
+      self_test_only: true
