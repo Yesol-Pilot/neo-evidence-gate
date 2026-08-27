@@ -23,8 +23,8 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://neogenesis.app"
-Repository = "https://github.com/Yesol-Pilot/neo-evidence-gate"
-Issues = "https://github.com/Yesol-Pilot/neo-evidence-gate/issues"
+Repository = "https://github.com/NeoGenesisAI/evidence-gate"
+Issues = "https://github.com/NeoGenesisAI/evidence-gate/issues"
 
 [project.optional-dependencies]
 dev = ["pytest>=7"]
